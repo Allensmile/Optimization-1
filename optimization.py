@@ -57,8 +57,15 @@ def schedulecost(sol):
     for d in range(int(len(sol)/2)):
         # Get the inbound and outbound flights
         origin=people[d][1]
-        outbound=flights[(origin,destination)][int(sol[d])]
-        returnf=flights[(destination,origin)][int(sol[d+1])]
+        try:
+            outbound=flights[(origin,destination)][int(sol[d])]
+
+            returnf=flights[(destination,origin)][int(sol[d+1])]
+        except Exception as ex:
+            print('Exception:',ex)
+            print('d=',d)
+            print('except:',sol[d],sol[d+1])
+
 
         # Total price is the price of all outbound and return flights
         totalprice+=outbound[2]
@@ -95,7 +102,7 @@ def schedulecost(sol):
 def randomoptimize(domain,costf):
     best=999999999
     bestr=None
-    for x in range(0,10000):
+    for x in range(0,1000):
         # Create a random solution
         r=[float(random.randint(domain[i][0],domain[i][1]))
            for i in range(len(domain))]
@@ -112,6 +119,41 @@ def randomoptimize(domain,costf):
     return bestr
 
 
+#爬山法，有可能只能得到局部最小解
+def hillclimb(domain,costf):
+    # Create a random solution
+    sol=[random.randint(domain[i][0],domain[i][1])
+        for i in range(len(domain))]
+    print('Seed Sol:',sol)
+    # Main loop
+    while 1:
+    # Create list of neighboring solutions
+        neighbors=[]
+
+        for j in range(len(domain)):
+            # One away in each direction
+            #有可能构造出超出范围的解决方案。如原本只有0-9的选择，会构造出-1或者10的解决
+            if sol[j]>domain[j][0]:
+                neighbors.append(sol[0:j]+[sol[j]+1]+sol[j+1:])
+            if sol[j]<domain[j][1]:
+                neighbors.append(sol[0:j]+[sol[j]-1]+sol[j+1:])
+        print(neighbors)
+        # See what the best solution amongst the neighbors is
+        current=costf(sol)
+        best=current
+        for j in range(len(neighbors)):
+            cost=costf(neighbors[j])
+            if cost<best:
+                best=cost
+                sol=neighbors[j]
+        # If there's no improvement, then we've reached the top
+        if best==current:
+            break
+    print('bestCost:',best)
+    print('bestSolution',sol)
+    return sol
+
+
 #s保存每个人乘坐飞到纽约和飞离纽约的航班顺序，长度是人数的两倍
 #s=[1,4,3,2,7,3,6,3,2,4,5,3]
 #printschedule(s)
@@ -122,4 +164,7 @@ domain=[(0,9)]*(len(people)*2)
 
 s=randomoptimize(domain,schedulecost)
 schedulecost(s)
+printschedule(s)
+
+s=hillclimb(domain,schedulecost)
 printschedule(s)
