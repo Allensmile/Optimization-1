@@ -28,7 +28,7 @@ for line in open('schedule.txt'):
     flights.setdefault((origin, dest), [])
     flights[(origin, dest)].append((depart, arrive, int(price)))
 
-print(flights)
+#print(flights)
 
 
 def getminutes(t):
@@ -54,7 +54,6 @@ def schedulecost(sol):
     totalprice = 0
     latestarrival = 0
     earliestdep = 24 * 60
-
     for d in range(int(len(sol) / 2)):
         # Get the inbound and outbound flights
         origin = people[d][1]
@@ -233,6 +232,78 @@ def annealingoptimize(domain, costf, T=10000.0, cool=0.95, step=1):
     print('bestCost:', eb)
     print('bestSolution', vec)
     return vec
+@timingOptimizer
+def geneticoptimize(domain,costf,popsize=50,step=1,mutprob=0.2,elite=0.2,maxiter=100):
+    '''遗传优化算法'''
+    #变异条件
+    def mutate(vec):
+        i=random.randint(0,len(domain)-1)
+        r=random.random()
+        #原书代码有bug，如果随机数>0.5,且vec[i]=9的话，会导致分支不能完全覆盖，增加else分支
+        if  r< 0.5 and vec[i] > domain[i][0]:
+            result=vec[0:i] + [vec[i] - step] + vec[i+1:]
+        elif vec[i] < domain[i][1]:
+            result=vec[0:i] + [vec[i] + step] + vec[i+1:]
+        else:
+            result=vec[0:i] + [vec[i] - step] + vec[i+1:]
+#
+        #try:
+        #    print('Good:',i,vec,result)
+        #except:
+        #    print('Error:',i,vec)
+        return result
+
+    #交叉操作
+    def crossover(r1,r2):
+        i=random.randint(1,len(domain)-2)
+        return r1[0:i] + r2[i:]
+
+    #构造初始群
+    pop=[]
+    for i in range(popsize):
+        vec=[random.randint(domain[i][0],domain[i][1])
+             for i in range(len(domain))]
+        pop.append(vec)
+
+    #每一代中有多少胜出者？
+    topelite=int(elite*popsize)
+
+    #主循环
+    for i in range(maxiter):
+        #print(pop)
+        scores=[(costf(v),v) for v in pop]
+        scores.sort()
+        ranked=[v for (s,v) in scores]
+        #打印当前最优值，从原书结束while循环，放置while循环前
+        #print(scores[0][0])
+        #从纯粹的胜出者开始 ，只取出前toplite个
+        pop=ranked[0:topelite]
+
+        #添加变异和配对后的胜出者，生成popsize-toplite个
+        while len(pop) < popsize:
+            #mutprob 几率发生变异，其他的进行遗传
+            if random.random() < mutprob:
+                #进行变异
+                #从上一代中随机取一个进行变异操作
+                #遗传源头从 ranked 获取，从pop 中取？是不是更合适？
+                c=random.randint(0,topelite-1)
+                #cm=mutate(ranked[c])
+                cm=mutate(pop[c])
+                pop.append(cm)
+
+            else:
+                #剩余的记录进行遗传交叉
+                c1=random.randint(0,topelite-1)
+                c2=random.randint(0,topelite-1)
+                #cc=crossover(ranked[c1],ranked[c2])
+                cc=crossover(pop[c1],pop[c2])
+                pop.append(cc)
+
+        #print(scores[0][0])
+    print('Optimizer: geneticoptimize')
+    print('bestCost:', scores[0][0])
+    print('bestSolution', scores[0][1])
+    return scores[0][1]
 
 
 
@@ -242,14 +313,20 @@ def annealingoptimize(domain, costf, T=10000.0, cool=0.95, step=1):
 # print(schedulecost(s))
 
 # domain保存每个人乘坐飞到纽约和飞离纽约的航班顺序，长度是人数的两倍
-domain = [(0, 9)] * (len(people) * 2)
 
-s = randomoptimize(domain, schedulecost)
-schedulecost(s)
-printschedule(s)
+#
+if 1==2:
+    domain = [(0, 9)] * (len(people) * 2)
+    print(domain,'length:',len(domain))
+    s = randomoptimize(domain, schedulecost)
+    schedulecost(s)
+    printschedule(s)
 
-s = hillclimb(domain, schedulecost)
-printschedule(s)
+    s = hillclimb(domain, schedulecost)
+    printschedule(s)
 
-s = annealingoptimize(domain,schedulecost,T=10000.0,cool=0.99)
-printschedule(s)
+    s = annealingoptimize(domain,schedulecost,T=10000.0,cool=0.99)
+    printschedule(s)
+
+    s = geneticoptimize(domain,schedulecost)
+    printschedule(s)
