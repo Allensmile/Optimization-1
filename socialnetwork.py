@@ -41,6 +41,17 @@ def crosscount(v):
             ub=((x2-x1)*(y1-y3)-(y2-y1)*(x1-x3))/den
             if ua>0 and ua<1 and ub>0 and ub<1:
                 total+=1
+    #对于两个节点离得太近的题解，对其进行判罚
+    for i in range(len(people)):
+        for j in range(i+1,len(people)):
+            #获得两点位置
+            (x1,y1),(x2,y2)=loc[people[i]],loc[people[j]]
+            #距离
+            dist=math.sqrt(math.pow(x1-x2,2))+math.pow(y1-y2,2)
+            #对于距离小于50个像素点的节点进行判罚
+            if dist < 50:
+                total+=(1.0-(dist/50))
+    #如果两条线离得太近呢？
     return total
 
 def drawnetwork(sol):
