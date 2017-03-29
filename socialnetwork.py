@@ -52,6 +52,7 @@ def crosscount(v):
             if dist < 50:
                 total+=(1.0-(dist/50))
     #如果两条线离得太近呢？
+    #需要通过两条线的夹角，通过计算叉乘来解决
     return total
 
 def drawnetwork(sol):
